@@ -1,0 +1,344 @@
+{
+  "info": {
+    "name": "Tecsup Laboratorio 01 Farmacia",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "medicamentos",
+      "value": "http://127.0.0.1:8081/api/medicamentos"
+    },
+    {
+      "key": "proveedores",
+      "value": "http://127.0.0.1:8082/api/proveedores"
+    },
+    {
+      "key": "ventas",
+      "value": "http://127.0.0.1:8083/api/ventas"
+    },
+    {
+      "key": "ruc",
+      "value": ""
+    },
+    {
+      "key": "comprobante",
+      "value": ""
+    },
+    {
+      "key": "fecha",
+      "value": ""
+    },
+    {
+      "key": "medicamentoId",
+      "value": ""
+    },
+    {
+      "key": "proveedorId",
+      "value": ""
+    },
+    {
+      "key": "ventaId",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "Crear proveedor",
+      "request": {
+        "method": "POST",
+        "url": "{{proveedores}}",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"razonSocial\": \"Farmacia Demo\",\n  \"ruc\": \"{{ruc}}\",\n  \"direccion\": \"Lima\",\n  \"correo\": \"demo@example.com\",\n  \"telefono\": \"999000111\"\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [
+              "const now = Date.now();",
+              "pm.collectionVariables.set('ruc', String(10000000000 + now % 90000000000));",
+              "pm.collectionVariables.set('comprobante', 'PM-' + now);",
+              "pm.collectionVariables.set('fecha', new Date(now).toISOString().slice(0,10));"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('HTTP 201', () => { pm.response.to.have.status(201);  });",
+              "if (pm.response.code === 201) pm.collectionVariables.set('proveedorId', pm.response.json().id);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Crear medicamento",
+      "request": {
+        "method": "POST",
+        "url": "{{medicamentos}}",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"nombre\": \"Paracetamol\",\n  \"descripcion\": \"Analgésico\",\n  \"laboratorio\": \"Demo\",\n  \"presentacion\": \"Caja\",\n  \"precioUnitario\": 12.5,\n  \"stock\": 5,\n  \"fechaVencimiento\": \"2030-12-31\"\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('HTTP 201', () => { pm.response.to.have.status(201);  });",
+              "if (pm.response.code === 201) pm.collectionVariables.set('medicamentoId', pm.response.json().id);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Consultar proveedor",
+      "request": {
+        "method": "GET",
+        "url": "{{proveedores}}/{{proveedorId}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('HTTP 200', () => { pm.response.to.have.status(200);  });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Consultar medicamento",
+      "request": {
+        "method": "GET",
+        "url": "{{medicamentos}}/{{medicamentoId}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('HTTP 200', () => { pm.response.to.have.status(200);  });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Registrar venta",
+      "request": {
+        "method": "POST",
+        "url": "{{ventas}}",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"numeroComprobante\": \"{{comprobante}}\",\n  \"fecha\": \"{{fecha}}\",\n  \"medicamentoId\": {{medicamentoId}},\n  \"proveedorId\": {{proveedorId}},\n  \"cantidad\": 2\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('HTTP 201', () => { pm.response.to.have.status(201); pm.expect(pm.response.json().total).to.eql(25); });",
+              "if (pm.response.code === 201) pm.collectionVariables.set('ventaId', pm.response.json().id);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Rechazar stock insuficiente",
+      "request": {
+        "method": "POST",
+        "url": "{{ventas}}",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"numeroComprobante\": \"{{comprobante}}-STOCK\",\n  \"fecha\": \"{{fecha}}\",\n  \"medicamentoId\": {{medicamentoId}},\n  \"cantidad\": 4\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('HTTP 409', () => { pm.response.to.have.status(409);  });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Rechazar medicamento inexistente",
+      "request": {
+        "method": "POST",
+        "url": "{{ventas}}",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"numeroComprobante\": \"{{comprobante}}-404\",\n  \"fecha\": \"{{fecha}}\",\n  \"medicamentoId\": 2147483647,\n  \"cantidad\": 1\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('HTTP 404', () => { pm.response.to.have.status(404);  });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Rechazar cantidad inválida",
+      "request": {
+        "method": "POST",
+        "url": "{{ventas}}",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"numeroComprobante\": \"{{comprobante}}-400\",\n  \"fecha\": \"{{fecha}}\",\n  \"medicamentoId\": {{medicamentoId}},\n  \"cantidad\": 0\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('HTTP 400', () => { pm.response.to.have.status(400);  });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Verificar descuento",
+      "request": {
+        "method": "GET",
+        "url": "{{medicamentos}}/{{medicamentoId}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('HTTP 200', () => { pm.response.to.have.status(200); pm.expect(pm.response.json().stock).to.eql(3); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Pagar venta",
+      "request": {
+        "method": "PATCH",
+        "url": "{{ventas}}/{{ventaId}}/estado",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"estado\": \"PAGADA\"\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('HTTP 200', () => { pm.response.to.have.status(200);  });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Anular venta",
+      "request": {
+        "method": "PATCH",
+        "url": "{{ventas}}/{{ventaId}}/estado",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"estado\": \"ANULADA\"\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('HTTP 200', () => { pm.response.to.have.status(200);  });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Verificar reposición",
+      "request": {
+        "method": "GET",
+        "url": "{{medicamentos}}/{{medicamentoId}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('HTTP 200', () => { pm.response.to.have.status(200); pm.expect(pm.response.json().stock).to.eql(5); });"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

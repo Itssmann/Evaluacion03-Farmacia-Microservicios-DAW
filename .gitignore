@@ -1,0 +1,16 @@
+target/
+.idea/
+*.iml
+*.log
+*.tmp
+*.swp
+.m2/
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.jks
+ENTREGA_FINAL/
+entrega-final.zip

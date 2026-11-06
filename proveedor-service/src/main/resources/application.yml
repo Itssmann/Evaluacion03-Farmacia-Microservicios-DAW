@@ -1,0 +1,13 @@
+spring:
+  application:
+    name: proveedor-service
+  profiles:
+    default: dev
+  datasource:
+    url: "jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/bd_proveedor"
+    username: "${DB_USERNAME}"
+    password: "${DB_PASSWORD}"
+  jpa:
+    open-in-view: false
+server:
+  port: 8082
